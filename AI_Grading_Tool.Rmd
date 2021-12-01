@@ -1,0 +1,76 @@
+---
+title: "AI Grading Weights"
+author: "Brandon Shields"
+date: "12/1/2021"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r Load Packages}
+
+library(caret)
+library(dplyr)
+library(tidyr)
+
+```
+
+```{r Import Dataset}
+
+ai_grader <- read.csv(file = "C:/Users/bshield6/OneDrive - Kent State University/Desktop/Copy of Copy of KSU-Assignment1-10-5-21.csv")
+
+#remove variables not needed for regression analysis
+
+ai_grader <- ai_grader[,c(3,5:9)]
+
+#Verify strucure  - all variables need to be numeric or integer
+
+print(str(ai_grader))
+
+
+ai_grader <- as.data.frame(sapply(ai_grader, as.numeric))
+```
+
+```{r Create Data Partition}
+#remove missing values
+
+ai_grader <- ai_grader[-175,]
+
+#create data partition for testing and training
+trainIndex <- createDataPartition(ai_grader$Score, p = .8, list = FALSE)
+data_train <- ai_grader[trainIndex,]
+data_test <- ai_grader[-trainIndex,]
+
+```
+
+```{r Train Linear Regression}
+
+#Train Model using linear regression. Method is Cross Validation with 5 folds.
+
+model_lm <- train(Score ~ Focus + Content + Language + Organization + Language +
+                  Mechanics,
+                  data = data_train,
+                  trControl = trainControl(method = "CV", number = 5),
+                  method = "lm")
+
+
+```
+
+```{r}
+
+# Review Model coeefficients and model summary to determine variables that are statistically significant, 
+print(model_lm$finalModel)
+
+print(summary(model_lm))
+
+```
+
+```{r}
+
+#Review results on test data set to see how they compare
+results <- predict(model_lm, newdata = data_test, type = "raw")
+
+#results will need to be rounded since responses can only be integers.
+results_rounded <- round(results, digits = 0)
+```
+
